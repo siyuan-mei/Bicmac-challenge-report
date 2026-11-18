@@ -57,6 +57,7 @@ used. Stage-3 training code is still provided for completeness.
 .
 |-- BICMAC_Challenge_Report_2page_Final.pdf   challenge report
 |-- README.md
+|-- LICENSE                                   MIT
 |-- requirements.txt
 |-- configs/
 |   |-- default_config.yaml                   global defaults
@@ -67,6 +68,7 @@ used. Stage-3 training code is still provided for completeness.
 |   `-- final/                                 resolved configs recorded by the actual runs
 |       |-- stage1_pet_prior.yaml
 |       |-- stage2_conditioning.yaml           <- inference config of the submission
+|       |-- stage2_bb01_fold1_v25.yaml         <- inference config of the released checkpoint
 |       `-- stage3_distillation.yaml
 |-- scripts/
 |   |-- predict.py                            inference entry point
@@ -137,18 +139,48 @@ python scripts/extra_data/postprocess_resampled_extra.py --extra-root $DATA_ROOT
 
 ### Checkpoints
 
-Model weights are **not** included in this repository and no download link is
-provided at this time. Inference needs Stage-2 checkpoints saved by
-`scripts/train.py` (`{"model": state_dict}`; full training checkpoints with
-optimizer state are also accepted). The submission used two checkpoints, one
-per fold (fold 1 and fold 4) of the Stage-2 recipe; in our pipeline the
-checkpoint selected per fold is the one with the best validation mu-MAE
-(`checkpoints/best_1-mae_mu_mean.ckpt`). Loading is strict for all network
-tensors: a mismatching checkpoint raises an error.
+**Released checkpoint.** One Stage-2 model is provided as an asset of the
+GitHub release [`v1.0.0`](https://github.com/siyuan-mei/Bicmac-challenge-report/releases/tag/v1.0.0)
+(the file exceeds GitHub's 100 MB limit for repository files):
+
+| File | Model | Config | SHA-256 |
+|---|---|---|---|
+| `bicmac_s2_bb01_fold1_v25.ckpt` (107 MB) | Stage 2, fold 1, run `s2_bb01_f1_v25`, best validation mu-MAE (0.00540 on the 8 fold-1 validation subjects) | `configs/final/stage2_bb01_fold1_v25.yaml` | `ef6de5ecdc82f37fcb4348ab8621a449ff8040fd4bd278916eb5f46995c7ac2a` |
+
+```bash
+mkdir -p checkpoints
+wget -O checkpoints/bicmac_s2_bb01_fold1_v25.ckpt \
+  https://github.com/siyuan-mei/Bicmac-challenge-report/releases/download/v1.0.0/bicmac_s2_bb01_fold1_v25.ckpt
+echo "ef6de5ecdc82f37fcb4348ab8621a449ff8040fd4bd278916eb5f46995c7ac2a  checkpoints/bicmac_s2_bb01_fold1_v25.ckpt" | sha256sum -c
+```
+
+This checkpoint has the same architecture and inputs as the submitted models
+and was trained with the Stage-2 recipe on fold 1, except for a
+PET-projection loss weight of 0.6 and a 0.1x backbone learning rate
+(`backbone_lr_mode: scaled`). It is a single model and **not** the submitted
+fold-1 + fold-4 ensemble, whose weights are not released.
+
+**Own checkpoints.** `scripts/train.py` saves `{"model": state_dict}` files;
+full training checkpoints with optimizer state are also accepted. The
+submission used two Stage-2 checkpoints, one per fold (fold 1 and fold 4); in
+our pipeline the checkpoint selected per fold is the one with the best
+validation mu-MAE (`checkpoints/best_1-mae_mu_mean.ckpt`). Loading is strict
+for all network tensors: a mismatching checkpoint raises an error.
 
 ### Commands
 
-Whole directory in the challenge layout (`<input_dir>/<subject>/features/...`):
+Released checkpoint, whole directory:
+
+```bash
+python scripts/predict.py \
+    --input_dir  /path/to/challenge_val \
+    --output_dir outputs/s2_bb01_fold1 \
+    --config     configs/final/stage2_bb01_fold1_v25.yaml \
+    --checkpoints checkpoints/bicmac_s2_bb01_fold1_v25.ckpt \
+    --device cuda
+```
+
+Submitted configuration (own fold-1 and fold-4 checkpoints), whole directory in the challenge layout (`<input_dir>/<subject>/features/...`):
 
 ```bash
 python scripts/predict.py \
@@ -275,6 +307,10 @@ Trains on the 8 AC-PET-labelled subjects of the official validation split
 overlap is reported in the log). Cosine LR 2e-5 -> 0 (4 GPUs), 50 epochs,
 4 crops x batch 1, feature-distillation weight 0.05, EMA decay 0.999.
 
+To retrain the released checkpoint, add
+`--set train_cfg.loss_weights.pet_projection=0.6 --set optim_cfg.backbone_lr_mode=scaled`
+to the Stage-2 command for fold 1 (`backbone_lr_scale` is already 0.1).
+
 ### Exploratory utilities
 
 `scripts/fuse_checkpoints.py` averages checkpoint weights ("model soup").
@@ -297,7 +333,8 @@ not the submitted configuration.
   CLIs, and a CPU smoke run of all three training stages.
 * With the original fold-1 and fold-4 checkpoints we verified locally that
   this code loads them strictly and reproduces the network output of the
-  original research code bit-for-bit on a real 128^3 input patch, and that
+  original research code bit-for-bit on a real 128^3 input patch (likewise
+  for the released `bicmac_s2_bb01_fold1_v25.ckpt`), and that
   input preprocessing on a full validation subject matches the original
   training/validation pipeline (max. abs. difference 1.3e-7).
 
@@ -310,7 +347,8 @@ not the submitted configuration.
   snapshot released here, so outputs of `scripts/predict.py` can differ from
   the submitted volumes outside the body. It will be added once the exact
   submitted implementation has been released.
-* Checkpoints and BIC-MAC data are not redistributed.
+* BIC-MAC data and the weights of the submitted ensemble are not
+  redistributed; only the single checkpoint above is released.
 * The Stage-1 checkpoint was trained on the original 67-subject training
   split; Stage-2 folds 2-5 therefore had upstream exposure to their validation
   subjects (fold 1 does not). Fold results other than fold 1 are not strict
@@ -326,7 +364,8 @@ preparation. Citation details will be added here once available.
 
 ## License
 
-No license has been specified yet. Until a license is added, please contact
-the authors before reusing the code. Third-party dependencies (PyTorch, MONAI,
+The code and the released checkpoint are distributed under the
+[MIT License](LICENSE). Use of the BIC-MAC, AutoPET and QUADRA data is
+governed by their respective terms. Third-party dependencies (PyTorch, MONAI,
 Lightning, etc.) are used under their own licenses and are not redistributed
 here.

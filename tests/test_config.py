@@ -35,6 +35,21 @@ class ConfigTests(unittest.TestCase):
         # The recorded LR is sqrt(4)-scaled from the fragment LR.
         self.assertAlmostEqual(record["optim_cfg.base_lr"], 2 * merged["optim_cfg.base_lr"])
 
+    def test_released_checkpoint_config_matches_recipe_with_overrides(self):
+        merged = configs.load_and_merge_config(["stages/finetune/spade"])
+        merged = OmegaConf.merge(merged, OmegaConf.from_dotlist([
+            "train_cfg.loss_weights.pet_projection=0.6",
+            "optim_cfg.backbone_lr_mode=scaled",
+        ]))
+        merged = flat(OmegaConf.to_container(merged))
+        record = flat(OmegaConf.to_container(
+            OmegaConf.load(configs.CONFIG_DIR / "final" / "stage2_bb01_fold1_v25.yaml")))
+        differences = {
+            key for key in set(merged) | set(record)
+            if merged.get(key) != record.get(key)
+        }
+        self.assertEqual(differences - RUNTIME_KEYS, set())
+
     def test_stage1_recipe(self):
         cfg = configs.load_and_merge_config(["stages/pretrain/mednext_l-extra"])
         self.assertIsNone(cfg.optim_cfg.scheduler)
