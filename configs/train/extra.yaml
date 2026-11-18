@@ -1,0 +1,24 @@
+# Stage-1 (PET prior) training settings, aligned with the resolved config of
+# the Stage-1 checkpoint used by the submission (configs/final/stage1_pet_prior.yaml):
+# constant learning rate (no scheduler / warmup) and HU-MAE + prediction-mask mu-MAE.
+train_cfg:
+  batch_size: 4
+  num_epochs: 600
+  grad_accum_steps: 1
+  save_freq: 25
+  vis_epoch_interval: 25
+  loss_weights:
+    hu_mae: 1.0
+    mu_mae_masked: 1.0
+
+optim_cfg:
+  optimizer: adamw
+  base_lr: 1e-4          # x sqrt(world_size): 2e-4 on 4 GPUs
+  lr_min: 1.0e-6
+  weight_decay: 0.0
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  grad_clip: 1.0
+  scheduler: null
+  warmup_epochs: 10
+  start_factor: 0.01

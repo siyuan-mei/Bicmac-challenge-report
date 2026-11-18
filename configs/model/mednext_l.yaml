@@ -1,0 +1,14 @@
+model_cfg:
+  family: mednext
+  scale: large
+  net:
+    type: MedNeXtv3
+    features: [32, 64, 128, 256, 512]
+    depths: [2, 3, 4, 4, 4]
+    decoder_depths: [2, 3, 4, 4]
+    kernel_sizes: [3, 3, 3, 3, 3]
+    expansion: [2, 3, 4, 4, 4]
+    skip_fusion: cat
+    layer_scale_init: null
+    use_checkpoint: false
+    input_fusion: concat

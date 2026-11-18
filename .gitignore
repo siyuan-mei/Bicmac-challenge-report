@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Data, models and run outputs (never commit images or checkpoints)
+data/
+work_dir/
+outputs/
+runs/
+wandb/
+*.ckpt
+*.pth
+*.pt
+*.nii
+*.nii.gz
+*.mha
+*.dcm
+*.npy
+*.npz
+*.zip
+*.tar
+
+# Logs / cluster artefacts
+logs/
+slurm-*.out
+slurm-*.err
+*.log
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store

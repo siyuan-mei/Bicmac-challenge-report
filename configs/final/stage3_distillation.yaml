@@ -1,0 +1,148 @@
+# Resolved configuration recorded by the training run "s3_same_f1_v26"
+# (copied verbatim; only data_root was replaced by a placeholder).
+# Learning rates are AFTER sqrt(world_size) scaling with world_size=4.
+# Stage 3 (AC-PET distillation), fold 1 (data_cfg.val_cv_fold=k for fold k). Not part of the final submitted model (see README).
+seed: 42
+smoke_no_write: false
+crop_size:
+- 128
+- 128
+- 128
+model_cfg:
+  net:
+    type: MedNeXtv3
+    features:
+    - 32
+    - 64
+    - 128
+    - 256
+    - 512
+    depths:
+    - 2
+    - 3
+    - 4
+    - 4
+    - 4
+    decoder_depths:
+    - 2
+    - 3
+    - 4
+    - 4
+    kernel_sizes:
+    - 3
+    - 3
+    - 3
+    - 3
+    - 3
+    expansion:
+    - 2
+    - 3
+    - 4
+    - 4
+    - 4
+    skip_fusion: cat
+    layer_scale_init: null
+    use_checkpoint: false
+    input_fusion: injector
+    condition_channels:
+    - 64
+    - 128
+    - 256
+    - 512
+    dropout: 0.0
+  family: mednext
+  scale: large
+  distillation:
+    weight: 0.05
+    pool_size: 16
+    levels:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+data_cfg:
+  data_root: ${oc.env:DATA_ROOT,data/bicmac}
+  base_dataset: bicmac
+  extra_dataset: []
+  mixed_batch: false
+  bicmac_mix_prob: 0.25
+  psma_fraction: 0.0
+  pet_to_nac_prob: 0.0
+  train_split: validation
+  val_split: validation
+  eval_split: challenge_val
+  input_keys:
+  - pet
+  - mr_in
+  - mr_out
+  - topogram
+  mask_keys:
+  - prediction_mask
+  - body_seg
+  - organ_seg
+  num_samples: 4
+  val_cv_fold: 1
+  enforce_disjoint_splits: true
+  use_extra_dataset: false
+train_cfg:
+  crop_size: ${crop_size}
+  accelerator: gpu
+  strategy: auto
+  devices: 4
+  precision: bf16-mixed
+  batch_size: 1
+  num_workers: 8
+  prefetch_factor: 1
+  num_epochs: 50
+  grad_accum_steps: 1
+  drop_last: false
+  limit_train_batches: .inf
+  max_steps: null
+  save_freq: 5
+  max_keep_ckpts: 1
+  save_best:
+  - 1-mae_mu_mean
+  save_best_mode:
+  - min
+  use_wandb: true
+  wandb_project: BICMAC
+  vis_epoch_interval: 5
+  save_visuals: true
+  channels_last: true
+  use_distributed_sampler: true
+  require_finetune_checkpoint: true
+  loss_weights:
+    hu_mae: 0.2
+    mu_mae_masked: 1.0
+    pet_projection: 1.0
+  world_size: 4
+val_cfg:
+  start_val: 0
+  val_freq: 10
+  patch_size: ${crop_size}
+  sw_batch_size: 1
+  overlap_ratio: 0.5
+  infer_mode: gaussian
+  sigma_scale: 0.125
+  cache_roi_weight_map: true
+  limit_val_batches: .inf
+  limit_test_batches: .inf
+  full_val_epoch: null
+optim_cfg:
+  optimizer: adamw
+  base_lr: 2.0e-05
+  lr_min: 0
+  weight_decay: 0.0
+  betas:
+  - 0.9
+  - 0.95
+  eps: 1.0e-08
+  grad_clip: 1.0
+  scheduler: cosine
+  warmup_epochs: 10
+  start_factor: 0.01
+  backbone_lr_mode: same
+  backbone_lr_scale: 0.1
+  layer_decay: 0.9
+  scale_lr_by_world_size: true

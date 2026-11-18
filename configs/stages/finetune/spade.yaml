@@ -1,0 +1,8 @@
+includes: [model/mednext_l_cond, data/pet_all_target, train/finetune]
+
+train_cfg:
+  num_epochs: 300
+  loss_weights:
+    hu_mae: 0.2
+    mu_mae_masked: 1.0
+    pet_projection: 1.0

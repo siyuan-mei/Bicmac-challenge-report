@@ -1,0 +1,7 @@
+includes: [model/mednext_l]
+
+model_cfg:
+  net:
+    input_fusion: injector
+    condition_channels: [64, 128, 256, 512]
+    dropout: 0.0

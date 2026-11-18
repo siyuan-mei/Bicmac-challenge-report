@@ -1,0 +1,76 @@
+seed: 42
+smoke_no_write: false
+crop_size: [128, 128, 128]
+
+model_cfg:
+  net:
+    type: null
+
+data_cfg:
+  data_root: ${oc.env:DATA_ROOT,data/bicmac}
+  base_dataset: bicmac
+  extra_dataset: []
+  mixed_batch: false
+  bicmac_mix_prob: 0.25
+  psma_fraction: 1.0
+  pet_to_nac_prob: 0.0
+  train_split: train
+  val_split: validation
+  eval_split: challenge_val
+  input_keys: [pet]
+  mask_keys: [prediction_mask, body_seg, organ_seg]
+  num_samples: 1
+
+train_cfg:
+  crop_size: ${crop_size}
+  accelerator: gpu
+  strategy: auto
+  devices: auto
+  precision: bf16-mixed
+  batch_size: 1
+  num_workers: 8
+  prefetch_factor: 1
+  num_epochs: 200
+  grad_accum_steps: 1
+  drop_last: false
+  limit_train_batches: .inf
+  max_steps: null
+  save_freq: 50
+  max_keep_ckpts: 1
+  save_best: [1-mae_mu_mean]
+  save_best_mode: [min]
+  use_wandb: true
+  wandb_project: BICMAC
+  vis_epoch_interval: 25
+  save_visuals: true
+  channels_last: true
+  use_distributed_sampler: true
+  require_finetune_checkpoint: false
+  loss_weights:
+    hu_mae: 1.0
+    mu_mae: 1.0
+
+val_cfg:
+  start_val: 0
+  val_freq: 50
+  patch_size: ${crop_size}
+  sw_batch_size: 1
+  overlap_ratio: 0.5
+  infer_mode: gaussian
+  sigma_scale: 0.125
+  cache_roi_weight_map: true
+  limit_val_batches: .inf
+  limit_test_batches: .inf
+  full_val_epoch: null
+
+optim_cfg:
+  optimizer: adamw
+  base_lr: 2e-4
+  lr_min: 1.0e-6
+  weight_decay: 0.0
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+  grad_clip: 1.0
+  scheduler: cosine
+  warmup_epochs: 10
+  start_factor: 0.01
